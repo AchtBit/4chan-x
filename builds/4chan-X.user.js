@@ -23,7 +23,7 @@
 // ==/UserScript==
 
 /*
-* 4chan X - Version 1.3.6 - 2014-02-13
+* 4chan X - Version 1.3.6 - 2014-02-14
 *
 * Licensed under the MIT license.
 * https://github.com/Spittie/4chan-x/blob/master/LICENSE
@@ -184,6 +184,7 @@
         'Thread Hiding Link': [true, 'Add a link to hide entire threads.'],
         'Reply Hiding Link': [true, 'Add a link to hide single replies.'],
         'Delete Link': [true, 'Add post and image deletion links to the menu.'],
+        'Download Link': [true, 'Add a download with original filename link to the menu. Chrome-only currently.'],
         'Archive Link': [true, 'Add an archive link to the menu.']
       },
       'Monitoring': {
@@ -8509,13 +8510,45 @@
         el: a,
         order: 100,
         open: function(_arg) {
-          var file;
+          var file, xhr;
           file = _arg.file;
           if (!file) {
             return false;
           }
-          a.href = file.URL;
-          a.download = file.name;
+          console.log("something");
+          xhr = new XMLHttpRequest();
+          xhr.open('GET', file.URL, true);
+          xhr.responseType = 'blob';
+          xhr.onload = function(e) {
+            var url, urlBlob;
+            if (this.readyState === this.DONE && xhr.status === 200) {
+              console.log("something");
+              urlBlob = new Blob([this.response], {
+                type: this.getResponseHeader('content-type')
+              });
+              url = URL.createObjectURL(urlBlob);
+              a.href = url;
+              a.download = file.name;
+              a = $.el('a', {
+                className: 'download-link',
+                textContent: 'Download file 2'
+              });
+              $.event('AddMenuEntry', {
+                type: 'post',
+                el: a,
+                order: 105
+              });
+              open(function(_arg1) {
+                var file;
+                file = _arg1.file;
+                a.href = url;
+                a.href = file.name;
+                return true;
+              });
+              return true;
+            }
+          };
+          xhr.send();
           return true;
         }
       });
